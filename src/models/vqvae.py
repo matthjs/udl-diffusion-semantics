@@ -1,15 +1,35 @@
+"""
+Implementation of VQ-VAE
+Taken from: https://github.com/KimRass/VQ-VAE-PixelCNN/tree/main
+"""
+
 # References:
     # https://github.com/MishaLaskin/vqvae/blob/master/models/quantizer.py
     # https://keras.io/examples/generative/vq_vae/
     # https://github.com/singh-hrituraj/PixelCNN-Pytorch/blob/master/MaskedCNN.py
     # https://github.com/davidADSP/Generative_Deep_Learning_2nd_Edition/blob/main/notebooks/05_autoregressive/02_pixelcnn/pixelcnn.ipynb
 
+import re
+from typing import OrderedDict
 import torch
 from torch import nn
 from torch.nn import functional as F
 from einops import rearrange
 
 torch.set_printoptions(linewidth=70)
+
+def modify_state_dict(state_dict, pattern=r"^module.|^_orig_mod."):
+    new_state_dict = OrderedDict()
+    for old_key, value in state_dict.items():
+        new_key = re.sub(pattern=pattern, repl="", string=old_key)
+        new_state_dict[new_key] = value
+    return new_state_dict
+
+def load_model_params(model, model_params, device, strict):
+    state_dict = torch.load(model_params, map_location=device)
+    state_dict = modify_state_dict(state_dict)
+    model.load_state_dict(state_dict, strict=strict)
+    print(f"Loaded model params from '{str(model_params)}'.")
 
 
 class Encoder(nn.Module):
