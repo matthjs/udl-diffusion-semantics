@@ -36,7 +36,7 @@ if __name__ == "__main__":
     os.makedirs(args.save_dir, exist_ok=True)
     N = 128  # number of classes for discretized state per pixel  # TODO DONT HARDCODE THIS
     d3pm = D3PM(
-        DiT_Llama(3, N, dim=1024), 1000, num_classes=N, hybrid_loss_coeff=0.0
+        DiT_Llama(1, N, dim=1024), 1000, num_classes=N, hybrid_loss_coeff=0.0
     ).to(args.device)
     print(f"Total Param Count: {sum([p.numel() for p in d3pm.x0_model.parameters()])}")
 
@@ -125,21 +125,39 @@ if __name__ == "__main__":
 
                 with torch.no_grad():
                     cond = torch.arange(0, 16).to(args.device) % 10
-                    init_noise = torch.randint(0, N, (16, 3, 32, 32)).to(args.device)
+                    if args.use_vae:
+                        # TODO: DONT HARDCODE THIS CHANGE IT LATER
+                        latent_size = 8
+                        init_noise = torch.randint(0, N, (16, 1, latent_size, latent_size)).to(args.device)
+                    else:
+                        init_noise = torch.randint(0, N, (16, 3, 32, 32)).to(args.device)
 
                     images = d3pm.sample_with_image_sequence(
                         init_noise, cond, stride=40
                     )
                     # image sequences to gif
                     gif = []
-                    for image in images:
-                        x_from_dataloader = x_cat[:16].cpu() / (N - 1)
-                        this_image = image.float().cpu() / (N - 1)
-                        all_images = torch.cat([x_from_dataloader, this_image], dim=0)
-                        x_as_image = make_grid(all_images, nrow=4)
-                        img = x_as_image.permute(1, 2, 0).cpu().numpy()
-                        img = (img * 255).astype(np.uint8)
-                        gif.append(Image.fromarray(img))
+                    if args.use_vae:
+                        q_sequence = images
+                        for q in q_sequence:
+                            q = q.squeeze(1)              # (B, 8, 8)
+                            img = vqvae.q_to_image(q)     # (B, 3, 32, 32)
+                            img = (img + 1) / 2            # [-1,1] → [0,1]
+
+                            grid = make_grid(img, nrow=4)
+                            np_img = (grid.permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8)
+                            gif.append(Image.fromarray(np_img))
+
+                    
+                    else:
+                        for image in images:
+                            x_from_dataloader = x_cat[:16].cpu() / (N - 1)
+                            this_image = image.float().cpu() / (N - 1)
+                            all_images = torch.cat([x_from_dataloader, this_image], dim=0)
+                            x_as_image = make_grid(all_images, nrow=4)
+                            img = x_as_image.permute(1, 2, 0).cpu().numpy()
+                            img = (img * 255).astype(np.uint8)
+                            gif.append(Image.fromarray(img))
 
                     gif[0].save(
                         f"{args.save_dir}/sample_{global_step}.gif",
