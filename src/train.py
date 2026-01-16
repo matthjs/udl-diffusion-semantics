@@ -34,7 +34,7 @@ if __name__ == "__main__":
         wandb.init(project=args.wandb_project)
 
     os.makedirs(args.save_dir, exist_ok=True)
-    N = 8  # number of classes for discretized state per pixel
+    N = 128  # number of classes for discretized state per pixel  # TODO DONT HARDCODE THIS
     d3pm = D3PM(
         DiT_Llama(3, N, dim=1024), 1000, num_classes=N, hybrid_loss_coeff=0.0
     ).to(args.device)
@@ -86,6 +86,9 @@ if __name__ == "__main__":
             if args.use_vae:
                 with torch.no_grad():   # might not be necessary
                     x_cat = vqvae.get_post_q(x)
+                    # print(x_cat.shape)
+                    x_cat = x_cat.unsqueeze(1)
+                    # print(x_cat.shape)
             else:
                 x_cat = (x * (N - 1)).round().long().clamp(0, N - 1)
 
