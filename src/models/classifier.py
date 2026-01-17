@@ -2,58 +2,70 @@ import torch
 import torch.nn as nn
 
 
+def _gn(num_channels: int, num_groups: int = 32):
+    num_groups = min(num_groups, num_channels)
+    while num_channels % num_groups != 0:
+        num_groups -= 1
+    return nn.GroupNorm(num_groups=num_groups, num_channels=num_channels)
+
+
+class _ResBlock(nn.Module):
+    def __init__(self, channels: int, dropout: float = 0.0):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Conv2d(channels, channels, kernel_size=3, padding=1, bias=False),
+            _gn(channels),
+            nn.ReLU(inplace=True),
+            nn.Dropout(dropout) if dropout > 0 else nn.Identity(),
+            nn.Conv2d(channels, channels, kernel_size=3, padding=1, bias=False),
+            _gn(channels),
+        )
+        self.act = nn.ReLU(inplace=True)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.act(x + self.net(x))
+
+
 class QClassifierCNN(nn.Module):
     """
-    Classifier for discrete VQ-VAE latents.
+    ResNet-style classifier for discrete VQ-VAE latents (q).
 
-    Input:
-        q : LongTensor of shape (B, H, W)
-            Values in {0, ..., K-1}
-
-    Architecture:
-        q -> Embedding(K, D) -> (B, D, H, W)
-          -> small CNN
-          -> global average pooling
-          -> Linear -> class logits
+    Input: q (B, H, W) int64
+      q -> Embedding(K, D) -> (B, D, H, W)
+        -> 1x1 projection to width
+        -> residual conv blocks
+        -> global avg pool -> linear logits
     """
-
     def __init__(
         self,
-        n_embeds: int,      # K (size of discrete codebook)
-        hidden_dim: int,    # D (embedding dimension)
+        n_embeds: int,
+        hidden_dim: int,
         n_classes: int,
         dropout: float = 0.1,
+        width: int = 256,
+        depth: int = 6,
     ):
         super().__init__()
 
-        # Token embedding for discrete q
         self.token_embed = nn.Embedding(n_embeds, hidden_dim)
 
-        self.cnn = nn.Sequential(
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.Dropout(dropout),
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1),
+        self.proj = nn.Sequential(
+            nn.Conv2d(hidden_dim, width, kernel_size=1, bias=False),
+            _gn(width),
             nn.ReLU(inplace=True),
         )
 
-        # Classification head
+        self.blocks = nn.Sequential(*[_ResBlock(width, dropout=dropout) for _ in range(depth)])
+
         self.head = nn.Sequential(
-            nn.AdaptiveAvgPool2d((1, 1)),  # (B, D, 1, 1)
-            nn.Flatten(),                  # (B, D)
-            nn.Linear(hidden_dim, n_classes),
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten(),
+            nn.Linear(width, n_classes),
         )
 
     def forward(self, q: torch.Tensor) -> torch.Tensor:
-        """
-        Args:
-            q: LongTensor (B, H, W)
-
-        Returns:
-            logits: FloatTensor (B, n_classes)
-        """
-        z = self.token_embed(q)      # (B, H, W, D)
-        z = z.permute(0, 3, 1, 2)    # (B, D, H, W)
-        z = self.cnn(z)              # (B, D, H, W)
-        logits = self.head(z)        # (B, n_classes)
-        return logits
+        z = self.token_embed(q)                 # (B, H, W, D)
+        z = z.permute(0, 3, 1, 2).contiguous()  # (B, D, H, W)
+        z = self.proj(z)                        # (B, width, H, W)
+        z = self.blocks(z)
+        return self.head(z)

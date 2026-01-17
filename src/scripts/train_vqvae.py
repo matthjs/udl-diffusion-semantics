@@ -6,8 +6,8 @@ import argparse
 from tqdm import tqdm
 import re
 
-from utils import get_device, set_seed, image_to_grid, save_image, save_model_params
-from models import VQVAE
+from utils.utils import get_device, set_seed, image_to_grid, save_image, save_model_params
+from models.vqvae import VQVAE
 
 
 def get_args(to_upperse=True):

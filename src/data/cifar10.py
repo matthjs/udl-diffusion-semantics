@@ -10,7 +10,6 @@ def dses_to_dls(train_ds, val_ds, test_ds, batch_size, n_cpus):
         train_ds,
         batch_size=batch_size,
         shuffle=True,
-        pin_memory=True,
         drop_last=True,
         persistent_workers=True,
         num_workers=n_cpus,
@@ -19,8 +18,7 @@ def dses_to_dls(train_ds, val_ds, test_ds, batch_size, n_cpus):
         val_ds,
         batch_size=batch_size,
         shuffle=False,
-        pin_memory=True,
-        drop_last=True,
+        drop_last=False,
         persistent_workers=True,
         num_workers=n_cpus,
     )
@@ -28,8 +26,7 @@ def dses_to_dls(train_ds, val_ds, test_ds, batch_size, n_cpus):
         test_ds,
         batch_size=batch_size,
         shuffle=False,
-        pin_memory=False,
-        drop_last=True,
+        drop_last=False,
         persistent_workers=False,
         num_workers=n_cpus,
     )

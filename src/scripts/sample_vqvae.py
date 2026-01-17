@@ -2,8 +2,8 @@ import argparse
 from pathlib import Path
 from tqdm import tqdm
 
-from utils import get_device, image_to_grid, save_image, load_model_params
-from models import VQVAE
+from src.utils.utils import get_device, image_to_grid, save_image, load_model_params
+from src.models.vqvae import VQVAE
 
 
 def get_args(to_upperse=True):
