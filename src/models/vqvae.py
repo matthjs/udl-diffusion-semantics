@@ -78,7 +78,7 @@ class VectorQuantizer(nn.Module):
         # "The discrete latent variables $z$ are then calculated by a nearest neighbour look-up
         # using the shared embedding space $e$."
         argmin = torch.argmin(squared_dist, dim=1) # (b * h * w,)
-        q = argmin.view(b, h, w) # (b, h, w)
+        q = argmin.reshape(b, h, w) # (b, h, w)
         return q
 
     def forward(self, x):
@@ -255,7 +255,7 @@ class VQVAE(nn.Module):
     def get_pixelcnn_loss(self, q):
         pred_q = self.pixelcnn(q)
         loss = F.cross_entropy(
-            rearrange(pred_q, pattern="b c h w -> (b h w) c"), q.view(-1,), reduction="mean",
+            rearrange(pred_q, pattern="b c h w -> (b h w) c"), q.reshape(-1), reduction="mean",
         )
         return loss
 

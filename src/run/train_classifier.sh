@@ -1,0 +1,15 @@
+python -m src.scripts.train_classifier \
+  --data_dir=./data \
+  --save_dir=./ckpts_joint \
+  --n_epochs=100 \
+  --batch_size=128 \
+  --n_cpus=4 \
+  --lr=2e-4 \
+  --vqvae_params=./pretrained/vqvae-cifar10.pth \
+  --n_embeds=128 \
+  --hidden_dim=64 \
+  --n_pixelcnn_res_blocks=2 \
+  --n_pixelcnn_conv_blocks=2 \
+  --lambda_cls=0.15 \
+  --commit_weight=0.25 \
+  --init_from_vqvae_codebook
