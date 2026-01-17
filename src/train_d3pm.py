@@ -248,6 +248,7 @@ if __name__ == "__main__":
     global_step = 0
     for i in range(args.epochs):
         global_step = training_iter(args, d3pm, vqvae, dataloader, optim, global_step)    # returns updated global_step
+        print(f"----Finished epoch {i}/{args.epochs}----")
 
     # Save the model weights
     os.makedirs("checkpoints", exist_ok=True)
