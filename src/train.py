@@ -36,7 +36,7 @@ if __name__ == "__main__":
     os.makedirs(args.save_dir, exist_ok=True)
     N = 128  # number of classes for discretized state per pixel  # TODO DONT HARDCODE THIS
     d3pm = D3PM(
-        DiT_Llama(1, N, dim=1024), 1000, num_classes=N, hybrid_loss_coeff=0.0
+        DiT_Llama(1 if args.use_vae else 3, N, dim=1024), 1000, num_classes=N, hybrid_loss_coeff=0.0
     ).to(args.device)
     print(f"Total Param Count: {sum([p.numel() for p in d3pm.x0_model.parameters()])}")
 
@@ -120,6 +120,8 @@ if __name__ == "__main__":
             optim.step()
             global_step += 1
 
+
+
             if global_step % 600 == 1:
                 d3pm.eval()
 
@@ -178,7 +180,16 @@ if __name__ == "__main__":
                                 "global_step": global_step,
                             }
                         )
-
+                if global_step % 2000 == 1:
+                    os.makedirs("checkpoints", exist_ok=True)
+                    torch.save(
+                        {
+                            "step": global_step,
+                            "model": d3pm.state_dict(),
+                            "optimizer": optim.state_dict(),
+                        },
+                        f"checkpoints/d3pm_step_{global_step}.pth",
+                    )
                 d3pm.train()
 
     # Save the model weights
