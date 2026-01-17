@@ -10,7 +10,7 @@ def _gn(num_channels: int, num_groups: int = 32):
 
 
 class _ResBlock(nn.Module):
-    def __init__(self, channels: int, dropout: float = 0.0):
+    def __init__(self, channels: int, dropout: float = 0.2):
         super().__init__()
         self.net = nn.Sequential(
             nn.Conv2d(channels, channels, kernel_size=3, padding=1, bias=False),

@@ -35,7 +35,7 @@ def get_args(to_upperse=True):
     p.add_argument("--n_pixelcnn_conv_blocks", type=int, required=True)
 
     # Classifier options
-    p.add_argument("--dropout", type=float, default=0.1)
+    p.add_argument("--dropout", type=float, default=0.2)
     p.add_argument("--freeze_codebook", action="store_true")
     p.add_argument("--init_from_vqvae_codebook", action="store_true")
 
@@ -127,6 +127,8 @@ def main():
         hidden_dim=args.HIDDEN_DIM,
         n_classes=n_classes,
         dropout=args.DROPOUT,
+        width=512,
+        depth=13,
     ).to(device)
 
     # Optional: init classifier token embedding from VQ-VAE codebook
@@ -142,7 +144,7 @@ def main():
     train_params += [p for p in vqvae.enc.parameters() if p.requires_grad]
     train_params += [p for p in vqvae.vect_quant.parameters() if p.requires_grad]
 
-    optim = AdamW(train_params, lr=args.LR, weight_decay=1e-4)
+    optim = AdamW(train_params, lr=args.LR, weight_decay=2e-4)
 
     best_val_acc = -math.inf
     best_path = None
