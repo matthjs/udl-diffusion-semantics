@@ -104,6 +104,9 @@ def load_cifar10_dataset(args: argparse.Namespace) -> DataLoader:
 
 def training_iter(args: argparse.Namespace,
                   d3pm: D3PM, vqvae: VQVAE, dataloader: DataLoader, optim, global_step: int) -> int:
+    """
+    A single training pass (epoch)
+    """
     pbar = tqdm(dataloader)
     loss_ema = None
     N = args.num_classes  # number of classes for discretized state per pixel
@@ -167,6 +170,9 @@ def training_iter(args: argparse.Namespace,
 
 def eval_sample_image(args: argparse.Namespace,
                       d3pm: D3PM, vqvae: VQVAE, x_cat: torch.Tensor, global_step: int) -> None:
+    """
+    Generates and logs samples during training.
+    """
     N = args.num_classes  # number of classes for discretized state per pixel
     d3pm.eval()
 
