@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from src.utils.utils import get_device, set_seed, load_model_params, save_model_params
 from src.models.vqvae import VQVAE
-from src.models.classifier import QClassifierCNN
+from src.models.classifiers import QClassifierCNN
 
 
 def get_args(to_upperse=True):
